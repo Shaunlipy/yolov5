@@ -1,0 +1,9 @@
+Collecting onnx
+  Downloading onnx-1.8.0-cp37-cp37m-macosx_10_9_x86_64.whl (7.7 MB)
+Requirement already satisfied: numpy in /Users/xuanli/.local/lib/python3.7/site-packages (from onnx) (1.18.4)
+Requirement already satisfied: six in /Users/xuanli/.local/lib/python3.7/site-packages (from onnx) (1.14.0)
+Requirement already satisfied: typing-extensions>=3.6.2.1 in /Users/xuanli/anaconda3/lib/python3.7/site-packages (from onnx) (3.7.4)
+Requirement already satisfied: protobuf in /Users/xuanli/anaconda3/lib/python3.7/site-packages (from onnx) (3.6.1)
+Requirement already satisfied: setuptools in /Users/xuanli/anaconda3/lib/python3.7/site-packages (from protobuf->onnx) (50.3.0.post20201006)
+Installing collected packages: onnx
+Successfully installed onnx-1.8.0

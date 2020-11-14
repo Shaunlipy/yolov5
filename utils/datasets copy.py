@@ -128,7 +128,6 @@ class LoadImages:  # for inference
         self.nf = ni + nv  # number of files
         self.video_flag = [False] * ni + [True] * nv
         self.mode = 'images'
-        self.count = 0
         if any(videos):
             self.new_video(videos[0])  # new video
         else:
@@ -170,14 +169,14 @@ class LoadImages:  # for inference
             print('image %g/%g %s: ' % (self.count, self.nf, path), end='')
 
         # Padded resize
-        img = letterbox(img0, new_shape=self.img_size, auto=False)[0]
+        img = letterbox(img0, new_shape=self.img_size)[0]
 
         # Convert
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
 
         # cv2.imwrite(path + '.letterbox.jpg', 255 * img.transpose((1, 2, 0))[:, :, ::-1])  # save letterbox image
-        return path, img, img, 'None'
+        return path, img, img0, self.cap
 
     def new_video(self, path):
         self.frame = 0
@@ -186,19 +185,6 @@ class LoadImages:  # for inference
 
     def __len__(self):
         return self.nf  # number of files
-
-    def __getitem__(self, idx):
-        return self.__next__()
-
-    @staticmethod
-    def collate_fn(batch):
-        path, img, img0, cap = zip(*batch)
-        # img, label, path, shapes = zip(*batch)  # transposed
-        for i, l in enumerate(label):
-            l[:, 0] = i  # add target image index for build_targets()
-        return path, torch.stack(img, 0), torch.stack(img, 0), path
-
-
 
 
 class LoadWebcam:  # for inference
