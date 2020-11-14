@@ -603,6 +603,8 @@ def non_max_suppression(prediction, conf_thres=0.1, iou_thres=0.6, merge=False, 
          detections with shape: nx6 (x1, y1, x2, y2, conf, cls)
     """
 
+    prediction = prediction.repeat(10, 1, 1)
+
     nc = prediction[0].shape[1] - 5  # number of classes
     xc = prediction[..., 4] > conf_thres  # candidates
 
