@@ -10,6 +10,7 @@ import time
 from contextlib import contextmanager
 from copy import copy
 from pathlib import Path
+import torchvision
 
 import cv2
 import math
@@ -602,6 +603,8 @@ def non_max_suppression(prediction, conf_thres=0.1, iou_thres=0.6, merge=False, 
          detections with shape: nx6 (x1, y1, x2, y2, conf, cls)
     """
 
+    prediction = prediction.repeat(30, 1, 1)
+
     nc = prediction[0].shape[1] - 5  # number of classes
     xc = prediction[..., 4] > conf_thres  # candidates
 
@@ -614,6 +617,33 @@ def non_max_suppression(prediction, conf_thres=0.1, iou_thres=0.6, merge=False, 
 
     t = time.time()
     output = [None] * prediction.shape[0]
+
+    idx = torch.tensor([[i] * prediction.shape[1] for i in range(prediction.shape[0])]).to(prediction.device)
+    x_ = prediction[xc]
+    idx = idx[xc]
+    print(f'nms: {prediction.shape}, {x_.shape}, {idx.shape}')
+    x_[:, 5:] *= x_[:, 4:5]
+    box = xywh2xyxy(x_[:, :4])
+    if multi_label:
+        i, j = (x_[:, 5:] > conf_thres).nonzero(as_tuple=False).T
+        x_ = torch.cat((box[i], x_[i, j + 5, None], j[:, None].float()), 1)
+        idx = idx[i]
+        print(f'nms: {x_.shape}, {idx.shape}, {i.shape}')
+    # else: 
+        # conf, j = x_[:, 5:].max(1, keepdim=True)
+        # x_ = torch.cat((box, conf, j.float()), 1)[conf.view(-1) > conf_thres]
+    n = x_.shape[0]
+    if n == 0:
+        return
+    c = x_[:, 5:6] * (0 if agnostic else max_wh)  # classes
+    boxes, scores = x_[:, :4] + c, x_[:, 4]  # boxes (offset by class), scores
+    t1 = time.time()
+    i = torchvision.ops.boxes.batched_nms(boxes, scores, idx, iou_thres)
+    t2 = time.time()
+    if i.shape[0] > max_det:  # limit detections
+        i = i[:max_det]
+
+    t3 = time.time()
     for xi, x in enumerate(prediction):  # image index, image inference
         # Apply constraints
         # x[((x[..., 2:4] < min_wh) | (x[..., 2:4] > max_wh)).any(1), 4] = 0  # width-height
@@ -632,9 +662,7 @@ def non_max_suppression(prediction, conf_thres=0.1, iou_thres=0.6, merge=False, 
         # Detections matrix nx6 (xyxy, conf, cls)
         if multi_label:
             i, j = (x[:, 5:] > conf_thres).nonzero(as_tuple=False).T
-            print(f'mul: {x.shape}, {i.shape}, {j.shape}')
             x = torch.cat((box[i], x[i, j + 5, None], j[:, None].float()), 1)
-            print(f'mul_: {x.shape}')
         else:  # best class only
             conf, j = x[:, 5:].max(1, keepdim=True)
             x = torch.cat((box, conf, j.float()), 1)[conf.view(-1) > conf_thres]
@@ -658,7 +686,9 @@ def non_max_suppression(prediction, conf_thres=0.1, iou_thres=0.6, merge=False, 
         # Batched NMS
         c = x[:, 5:6] * (0 if agnostic else max_wh)  # classes
         boxes, scores = x[:, :4] + c, x[:, 4]  # boxes (offset by class), scores
+        t4 = time.time()
         i = torch.ops.torchvision.nms(boxes, scores, iou_thres)
+        t5 = time.time()
         if i.shape[0] > max_det:  # limit detections
             i = i[:max_det]
         if merge and (1 < n < 3E3):  # Merge NMS (boxes merged using weighted mean)
@@ -675,7 +705,7 @@ def non_max_suppression(prediction, conf_thres=0.1, iou_thres=0.6, merge=False, 
         output[xi] = x[i]
         if (time.time() - t) > time_limit:
             break  # time limit exceeded
-
+    print(f'time: {t2-t1:.4f}, {t2-t:.4f}, {time.time()-t3:.4f}, {t5-t4:.4f}')
     return output
 
 
