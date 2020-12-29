@@ -1,5 +1,6 @@
 import argparse
 import os
+os.environ['KMP_DUPLICATE_LIB_OK']='True'
 import shutil
 import time
 from pathlib import Path
@@ -146,10 +147,10 @@ def detect(save_img=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--weights', nargs='+', type=str, default='yolov5s.pt', help='model.pt path(s)')
-    parser.add_argument('--source', type=str, default='inference/images', help='source')  # file/folder, 0 for webcam
+    parser.add_argument('--weights', nargs='+', type=str, default='/Volumes/CT500/Researches/torchserve_example/airport/artefacts/model-11-10.pt', help='model.pt path(s)')
+    parser.add_argument('--source', type=str, default='/Users/xuan/Downloads/dyc/vlcsnap-00016.jpg', help='source')  # file/folder, 0 for webcam
     parser.add_argument('--output', type=str, default='inference/output', help='output folder')  # output folder
-    parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
+    parser.add_argument('--img-size', type=int, default=820, help='inference size (pixels)')
     parser.add_argument('--conf-thres', type=float, default=0.25, help='object confidence threshold')
     parser.add_argument('--iou-thres', type=float, default=0.45, help='IOU threshold for NMS')
     parser.add_argument('--device', default='', help='cuda device, i.e. 0 or 0,1,2,3 or cpu')
